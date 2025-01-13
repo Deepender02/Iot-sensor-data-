@@ -1,0 +1,54 @@
+----------------------  My PC is crashing alot after installing the docker, its not functional and the system crashes into the BSOD. So I'm attaching the steps to Dockerize the solution. ---------------------------
+
+
+
+
+## Steps to Dockerize the Solution
+
+### 1. Write a Dockerfile
+Attached Dockerfile to containerize the solution:
+
+# Use the Python base image
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the Python script and dependencies file to the container
+COPY requirements.txt ./
+COPY main.py ./
+COPY IoT_Sensor_Data.csv ./
+
+# Install required Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Define the command to run the script
+CMD ["python", "main.py"]
+
+### 2. Prepare the Required Files
+Ensure the following files are in the same directory as the Dockerfile:
+- `main.py`: The Python script containing the solution.
+- requirements.txt: A list of all required dependencies (e.g., Pandas, NumPy, SQLite3).
+ - Example:
+    
+ pandas
+ numpy
+ matplotlib
+ sqlite3
+  
+- `IoT_Sensor_Data.csv`: The dataset used by the script.
+
+### 3. Build the Docker Image
+Run the following command to build the Docker image:
+
+docker build -t iot-sensor-solution .
+
+
+### 4. Run the Docker Container
+Once the image is built, execute the following command to run the container:
+
+docker run --name iot-sensor-container iot-sensor-solution
+
+
+
+
+

@@ -1,0 +1,102 @@
+# Documentation for IoT Sensor Data Processing
+
+## Overview
+This document provides a comprehensive overview of the steps taken to process, clean, and analyze IoT sensor data. It includes details on the data cleaning process, SQL queries used, and challenges faced during the implementation, along with their solutions.
+
+---
+
+----------------------->>>>     1. Steps Taken in Data Cleaning and Analysis       <<<<<<<<<<-------------------
+
+### **1.1 Data Cleaning**
+#### **a) Loading Data**
+- The data was loaded from a CSV file using the `pandas` library.
+- The dataset contained six columns: `timestamp`, `site_id`, `meter_id`, `sensor_name`, `sensor_value`, and `status`.
+
+#### **b) Preprocessing Steps**
+
+1. **Negative Values:**
+   - Rows where `sensor_value` was negative were removed, as these values are invalid for metrics like power consumption or temperature.
+2. **Missing Values:**
+   - Rows with missing data in any column were dropped using `pandas.dropna()`.
+3. **Duplicate Rows:**
+   - Duplicate rows were identified and removed to avoid redundant information.
+
+### **1.2 Data Analysis**
+
+#### **a) Normalization:**
+- The `sensor_value` column was normalized to a range of 0 to 1 using the formula:
+  \[ \text{Normalized Value} = \frac{\text{Value} - \text{Min}}{\text{Max} - \text{Min}} \]
+
+#### **b) Time-Series Processing:**
+
+1. **Timestamp Conversion:**
+   - The `timestamp` column was converted to a `datetime` format for accurate indexing.
+2. **Missing Timestamps:**
+   - Missing timestamps were filled using resampling at one-minute intervals, followed by linear interpolation to estimate missing `sensor_value` data.
+
+#### **c) Metrics Calculation:**
+- Calculated daily metrics such as averages, maximums, and sums for `sensor_value`.
+- These metrics were grouped by the `date` column derived from `timestamp`.
+
+---
+
+-------------->>>>>>>>>>>>>    2. SQL Queries with Explanations     <<<<<<<<<<------------------------
+
+### **2.1 Total Power Consumption by Site**
+
+SELECT site_id, SUM(sensor_value) AS total_power_consumption
+FROM sensor_data
+WHERE sensor_name = 'power_consumption'
+GROUP BY site_id;
+
+
+**Explanation:**
+- This query calculates the total power consumption for each site by summing the `sensor_value` for rows where `sensor_name` is `power_consumption`. Grouping by `site_id` ensures results are computed per site.
+
+### **2.2 Meters with Highest Power Usage per Site**
+
+SELECT site_id, meter_id, MAX(total_power) AS max_power_usage
+FROM (
+    SELECT site_id, meter_id, SUM(sensor_value) AS total_power
+    FROM sensor_data
+    WHERE sensor_name = 'power_consumption'
+    GROUP BY site_id, meter_id
+) subquery
+GROUP BY site_id;
+
+
+**Explanation:**
+- This query first calculates the total power consumption for each meter by grouping by `site_id` and `meter_id`. Then, it identifies the meter with the maximum power usage for each site.
+
+
+--------------------------->>>>>>>>>>>   3. Challenges Faced and Solutions         <<<<<<<<<<<<<<----------------------------------
+
+### **3.1 Challenge: Handling Missing Timestamps**
+**Problem:**
+- Timestamps in the dataset were irregular, with several gaps in the data.
+
+**Solution:**
+- Resampled the data at one-minute intervals and filled missing timestamps using interpolation. This ensured continuity in time-series data.
+
+### **3.2 Challenge: Large Dataset Size**
+**Problem:**
+- The dataset had over 22,000 rows, making certain operations (e.g., resampling) computationally intensive.
+
+**Solution:**
+- Optimized data processing by using vectorized operations in pandas and minimizing the use of iterative loops.
+
+### **3.3 Challenge: SQL Query Optimization**
+**Problem:**
+- SQL queries involving multiple subqueries were initially slow for large datasets.
+
+**Solution:**
+- Added indexes on frequently queried columns like `site_id` and `timestamp` to speed up lookups and aggregations.
+
+### **3.4 Challenge: Invalid Sensor Values**
+**Problem:**
+- Sensor values occasionally contained anomalies like negative readings.
+
+**Solution:**
+- Implemented filtering to exclude rows with invalid values and flagged such rows for further investigation.
+
+
